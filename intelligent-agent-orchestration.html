@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intelligent Agent Orchestration</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --bg-card: #12151c;
+    --bg-card-hover: #181c26;
+    --border: #1e2330;
+    --border-accent: #2a3045;
+    --text: #e8eaf0;
+    --text-muted: #7a8194;
+    --text-dim: #4a5068;
+    --accent: #6c8cff;
+    --accent-glow: rgba(108, 140, 255, 0.15);
+    --accent-warm: #ff8c5a;
+    --accent-green: #5affa0;
+    --accent-red: #ff5a6c;
+    --accent-purple: #b07aff;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Outfit', sans-serif;
+    font-weight: 300;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    z-index: 9999;
+  }
+
+  .container {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0 40px;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -200px;
+    right: -200px;
+    width: 700px;
+    height: 700px;
+    background: radial-gradient(circle, rgba(108,140,255,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: -100px;
+    left: -150px;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(255,140,90,0.05) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-content { position: relative; z-index: 1; }
+
+  .hero-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 32px;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.2s;
+  }
+
+  .hero h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(40px, 6vw, 72px);
+    font-weight: 400;
+    line-height: 1.1;
+    letter-spacing: -1px;
+    margin-bottom: 16px;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.4s;
+  }
+
+  .hero h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .hero-sub {
+    font-size: 20px;
+    color: var(--text-muted);
+    max-width: 540px;
+    margin-bottom: 48px;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.6s;
+  }
+
+  .hero-tags {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.8s;
+  }
+
+  .hero-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+  }
+
+  /* ── SECTION COMMON ── */
+  section {
+    padding: 120px 0;
+    position: relative;
+  }
+
+  .section-number {
+    font-family: 'DM Serif Display', serif;
+    font-size: 120px;
+    color: var(--border);
+    position: absolute;
+    top: 80px;
+    right: 40px;
+    line-height: 1;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(28px, 4vw, 44px);
+    font-weight: 400;
+    margin-bottom: 24px;
+    line-height: 1.2;
+  }
+
+  .section-desc {
+    font-size: 17px;
+    color: var(--text-muted);
+    max-width: 620px;
+    margin-bottom: 56px;
+  }
+
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, var(--border) 0%, transparent 100%);
+    margin: 0;
+  }
+
+  /* ── PROBLEM CARDS ── */
+  .problem-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
+    margin-top: 40px;
+  }
+
+  .problem-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .problem-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent-red), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .problem-card:hover { border-color: var(--border-accent); }
+  .problem-card:hover::before { opacity: 1; }
+
+  .problem-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: rgba(255,90,108,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+    font-size: 16px;
+  }
+
+  .problem-card h4 {
+    font-weight: 500;
+    font-size: 15px;
+    margin-bottom: 8px;
+  }
+
+  .problem-card p {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  /* ── DIAGRAM ── */
+  .diagram-wrapper {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 48px;
+    margin: 48px 0;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .diagram-wrapper::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, var(--accent-glow) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .coordinator-box {
+    display: inline-block;
+    background: linear-gradient(135deg, rgba(108,140,255,0.15), rgba(108,140,255,0.05));
+    border: 1px solid rgba(108,140,255,0.3);
+    border-radius: 12px;
+    padding: 20px 40px;
+    margin-bottom: 40px;
+    position: relative;
+  }
+
+  .coordinator-box h3 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 1px;
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  .coordinator-box span {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .connector-lines {
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    margin-bottom: 12px;
+  }
+
+  .connector-line {
+    width: 1px;
+    height: 40px;
+    background: linear-gradient(to bottom, rgba(108,140,255,0.4), rgba(108,140,255,0.1));
+    margin: 0 80px;
+  }
+
+  .agents-row {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .agent-node {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 28px;
+    min-width: 140px;
+    transition: all 0.3s ease;
+  }
+
+  .agent-node:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+  }
+
+  .agent-node .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .agent-node .sub {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  /* ── FEATURES ── */
+  .features-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
+    margin-top: 40px;
+  }
+
+  .feature-item {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .feature-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    margin-top: 8px;
+    flex-shrink: 0;
+  }
+
+  .feature-item h4 {
+    font-weight: 500;
+    font-size: 15px;
+    margin-bottom: 4px;
+  }
+
+  .feature-item p {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  /* ── ARCHITECTURE OPTIONS ── */
+  .options-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+    margin-top: 40px;
+  }
+
+  .option-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 32px;
+    position: relative;
+    transition: all 0.3s ease;
+  }
+
+  .option-card:hover {
+    border-color: var(--border-accent);
+    background: var(--bg-card-hover);
+  }
+
+  .option-card.recommended {
+    border-color: rgba(108,140,255,0.3);
+    background: linear-gradient(170deg, rgba(108,140,255,0.06) 0%, var(--bg-card) 40%);
+  }
+
+  .option-badge {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 4px;
+    margin-bottom: 16px;
+  }
+
+  .option-badge.a { background: rgba(255,140,90,0.1); color: var(--accent-warm); }
+  .option-badge.b { background: rgba(176,122,255,0.1); color: var(--accent-purple); }
+  .option-badge.c { background: rgba(108,140,255,0.15); color: var(--accent); }
+
+  .recommended-tag {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--accent-green);
+    background: rgba(90,255,160,0.08);
+    padding: 4px 10px;
+    border-radius: 4px;
+  }
+
+  .option-card h3 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    font-weight: 400;
+    margin-bottom: 12px;
+  }
+
+  .option-card .desc {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+    line-height: 1.6;
+  }
+
+  .pros-cons { margin-top: 16px; }
+
+  .pro, .con {
+    font-size: 13px;
+    padding: 4px 0;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .pro::before {
+    content: '✓';
+    color: var(--accent-green);
+    font-weight: 600;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  .con::before {
+    content: '✗';
+    color: var(--accent-red);
+    font-weight: 600;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  .pro { color: var(--text); }
+  .con { color: var(--text-muted); }
+
+  .timeline-tag {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    padding: 3px 10px;
+    border-radius: 4px;
+    margin-top: 16px;
+  }
+
+  /* ── TIERS ── */
+  .tiers-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 32px 0;
+  }
+
+  .tier-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    transition: all 0.3s ease;
+  }
+
+  .tier-row:hover { border-color: var(--border-accent); }
+
+  .tier-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    min-width: 56px;
+    text-align: center;
+  }
+
+  .tier-badge.t1 { background: rgba(90,255,160,0.1); color: var(--accent-green); }
+  .tier-badge.t2 { background: rgba(108,140,255,0.1); color: var(--accent); }
+  .tier-badge.t3 { background: rgba(255,140,90,0.1); color: var(--accent-warm); }
+
+  .tier-text h5 {
+    font-weight: 500;
+    font-size: 14px;
+    margin-bottom: 2px;
+  }
+
+  .tier-text p {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  /* ── CHALLENGES ── */
+  .challenges-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 40px;
+  }
+
+  .challenge-card {
+    display: grid;
+    grid-template-columns: 48px 1fr 1fr;
+    gap: 24px;
+    align-items: start;
+    padding: 28px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+  }
+
+  .challenge-card:hover {
+    border-color: var(--border-accent);
+    background: var(--bg-card-hover);
+  }
+
+  .challenge-num {
+    font-family: 'DM Serif Display', serif;
+    font-size: 32px;
+    color: var(--text-dim);
+    line-height: 1;
+    padding-top: 4px;
+  }
+
+  .challenge-problem h4 {
+    font-weight: 500;
+    font-size: 15px;
+    margin-bottom: 8px;
+  }
+
+  .challenge-problem p {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  .challenge-fix {
+    background: rgba(108,140,255,0.04);
+    border-left: 2px solid rgba(108,140,255,0.2);
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+  }
+
+  .challenge-fix .fix-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+
+  .challenge-fix p {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  /* ── CONCLUSION ── */
+  .conclusion {
+    text-align: center;
+    padding: 120px 0 160px;
+  }
+
+  .conclusion-quote {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(24px, 3.5vw, 38px);
+    font-weight: 400;
+    line-height: 1.35;
+    max-width: 700px;
+    margin: 0 auto 24px;
+  }
+
+  .conclusion-quote em {
+    color: var(--accent);
+    font-style: italic;
+  }
+
+  .conclusion p {
+    font-size: 16px;
+    color: var(--text-muted);
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  /* ── IMPACT BOX ── */
+  .impact-box {
+    margin-top: 40px;
+    padding: 24px 28px;
+    background: rgba(255,90,108,0.04);
+    border: 1px solid rgba(255,90,108,0.12);
+    border-radius: 10px;
+  }
+
+  .impact-box .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent-red);
+    margin-bottom: 8px;
+  }
+
+  .impact-box p {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  /* ── ARROW ── */
+  .rec-arrow {
+    text-align: center;
+    padding: 32px 0;
+  }
+
+  .rec-arrow span {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    background: var(--accent-glow);
+    padding: 10px 24px;
+    border-radius: 100px;
+    border: 1px solid rgba(108,140,255,0.2);
+    letter-spacing: 0.5px;
+  }
+
+  /* ── VIABILITY ── */
+  .viability-bar {
+    margin: 40px 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .viability-track {
+    flex: 1;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .viability-fill {
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, var(--accent-green), var(--accent));
+    border-radius: 3px;
+    animation: fillBar 1.5s ease forwards;
+  }
+
+  .viability-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--accent-green);
+    flex-shrink: 0;
+  }
+
+  .viability-note {
+    font-size: 14px;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fillBar {
+    from { width: 0; }
+    to { width: 100%; }
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    .container { padding: 0 24px; }
+    section { padding: 80px 0; }
+    .section-number { font-size: 80px; top: 60px; right: 20px; }
+    .diagram-wrapper { padding: 28px 20px; }
+    .connector-line { margin: 0 40px; }
+    .challenge-card {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    .challenge-num { font-size: 24px; }
+    .options-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════ HERO ══════════ -->
+<section class="hero">
+  <div class="container hero-content">
+    <div class="hero-label">Dataka · AI Agent Architecture</div>
+    <h1><em>Intelligent</em> Agent<br>Orchestration</h1>
+    <p class="hero-sub">How to connect siloed AI agents across a multi-site consortium — moving from local optimization to global intelligence.</p>
+    <div class="hero-tags">
+      <span class="hero-tag">Challenge</span>
+      <span class="hero-tag">Solution</span>
+      <span class="hero-tag">Architecture</span>
+      <span class="hero-tag">Key Risks</span>
+    </div>
+  </div>
+</section>
+
+<div class="container"><div class="divider"></div></div>
+
+<!-- ══════════ 01 · THE CHALLENGE ══════════ -->
+<section>
+  <div class="container">
+    <span class="section-number">01</span>
+    <div class="section-label">Chapter 01</div>
+    <h2 class="section-title">The Challenge</h2>
+    <p class="section-desc">Each company in the consortium has deployed its own specialized AI agents to optimize local operations. These agents are verticalized, specialized, and operate in complete isolation.</p>
+
+    <div class="diagram-wrapper" style="margin-bottom: 40px;">
+      <div class="agents-row">
+        <div class="agent-node">
+          <div class="label">Company A → Agent A</div>
+          <div class="sub">Only knows A</div>
+        </div>
+        <div class="agent-node">
+          <div class="label">Company B → Agent B</div>
+          <div class="sub">Only knows B</div>
+        </div>
+        <div class="agent-node">
+          <div class="label">Company C → Agent C</div>
+          <div class="sub">Only knows C</div>
+        </div>
+      </div>
+      <p style="margin-top: 20px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--accent-red); letter-spacing: 1px;">✗ THEY DON'T TALK TO EACH OTHER</p>
+    </div>
+
+    <div class="problem-grid">
+      <div class="problem-card">
+        <div class="problem-icon">🔒</div>
+        <h4>Local Optimization Only</h4>
+        <p>Each agent optimizes for its own company with no awareness of constraints or capabilities elsewhere.</p>
+      </div>
+      <div class="problem-card">
+        <div class="problem-icon">⚖️</div>
+        <h4>Suboptimal Decisions</h4>
+        <p>Without global context, decisions that are harmful to the consortium as a whole go unchecked.</p>
+      </div>
+      <div class="problem-card">
+        <div class="problem-icon">📦</div>
+        <h4>Wasted Resources</h4>
+        <p>Equipment sits idle at one company while another desperately needs it.</p>
+      </div>
+      <div class="problem-card">
+        <div class="problem-icon">🔄</div>
+        <h4>Duplicated Efforts</h4>
+        <p>Redundant analyses are performed across companies with no coordination.</p>
+      </div>
+      <div class="problem-card">
+        <div class="problem-icon">💡</div>
+        <h4>Missed Opportunities</h4>
+        <p>Potential synergies between companies are never realized.</p>
+      </div>
+    </div>
+
+    <div class="impact-box">
+      <div class="label">Business Impact</div>
+      <p>Operational inefficiency · Unnecessary costs · Underutilized capacity · Reduced competitiveness</p>
+    </div>
+  </div>
+</section>
+
+<div class="container"><div class="divider"></div></div>
+
+<!-- ══════════ 02 · THE SOLUTION ══════════ -->
+<section>
+  <div class="container">
+    <span class="section-number">02</span>
+    <div class="section-label">Chapter 02</div>
+    <h2 class="section-title">The Solution</h2>
+    <p class="section-desc">A Central Coordinator Agent that acts as an intelligent orchestrator. Local agents remain autonomous but communicate through a neutral intermediary with full global context.</p>
+
+    <div class="diagram-wrapper">
+      <div class="coordinator-box">
+        <h3>Central Coordinator Agent</h3>
+        <span>Global Orchestration</span>
+      </div>
+      <div class="connector-lines">
+        <div class="connector-line"></div>
+        <div class="connector-line"></div>
+        <div class="connector-line"></div>
+      </div>
+      <div class="agents-row">
+        <div class="agent-node">
+          <div class="label">Agent A</div>
+          <div class="sub">Autonomous</div>
+        </div>
+        <div class="agent-node">
+          <div class="label">Agent B</div>
+          <div class="sub">Autonomous</div>
+        </div>
+        <div class="agent-node">
+          <div class="label">Agent C</div>
+          <div class="sub">Autonomous</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="features-list">
+      <div class="feature-item">
+        <div class="feature-dot"></div>
+        <div>
+          <h4>Intelligent Routing</h4>
+          <p>Analyzes each query, identifies the required agents, and invokes them in parallel.</p>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-dot"></div>
+        <div>
+          <h4>Response Synthesis</h4>
+          <p>Receives data from multiple agents and produces a coherent, global response.</p>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-dot"></div>
+        <div>
+          <h4>Cross-Entity Governance</h4>
+          <p>Validates permissions, audits access, and ensures compliance across all nodes.</p>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-dot"></div>
+        <div>
+          <h4>Global Visibility</h4>
+          <p>Maintains full consortium context for better-informed decisions.</p>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-dot"></div>
+        <div>
+          <h4>Scalability</h4>
+          <p>New companies join without redesigning anything — just plug in their agent.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="container"><div class="divider"></div></div>
+
+<!-- ══════════ 03 · ARCHITECTURE ══════════ -->
+<section>
+  <div class="container">
+    <span class="section-number">03</span>
+    <div class="section-label">Chapter 03</div>
+    <h2 class="section-title">Architecture</h2>
+    <p class="section-desc">Three options with different levels of complexity, maturity, and implementation timelines.</p>
+
+    <div class="options-grid">
+      <!-- Option A -->
+      <div class="option-card">
+        <div class="option-badge a">Option A</div>
+        <h3>Full Standardization</h3>
+        <p class="desc">Each company defines a minimal standard contract for its agent. The coordinator talks to all of them through the same interface.</p>
+        <div class="pros-cons">
+          <div class="pro">Clean, maintainable architecture</div>
+          <div class="pro">True governance at the coordinator</div>
+          <div class="pro">Scalable · LLM-agnostic</div>
+          <div class="con">Requires changes to existing agents</div>
+          <div class="con">Needs buy-in from all companies</div>
+        </div>
+        <div class="timeline-tag">3 – 6 months MVP</div>
+      </div>
+
+      <!-- Option B -->
+      <div class="option-card">
+        <div class="option-badge b">Option B</div>
+        <h3>Adapter Layer</h3>
+        <p class="desc">Build adapters per agent type (GPT, Claude, LLaMA…). Each adapter translates between the coordinator protocol and the agent's API.</p>
+        <div class="pros-cons">
+          <div class="pro">No changes to existing agents</div>
+          <div class="pro">Fast implementation</div>
+          <div class="pro">Low initial risk</div>
+          <div class="con">Delegated governance, not real per node</div>
+          <div class="con">Complexity grows with N adapters</div>
+        </div>
+        <div class="timeline-tag">2 – 4 weeks</div>
+      </div>
+
+      <!-- Option C -->
+      <div class="option-card recommended">
+        <span class="recommended-tag">⭐ Recommended</span>
+        <div class="option-badge c">Option C</div>
+        <h3>Hybrid</h3>
+        <p class="desc">Acknowledges that agents are at different maturity levels. Connects each one according to its current capability.</p>
+
+        <div class="tiers-container">
+          <div class="tier-row">
+            <span class="tier-badge t1">Tier 1</span>
+            <div class="tier-text">
+              <h5>Ideal</h5>
+              <p>Agents with API/MCP → Direct connection</p>
+            </div>
+          </div>
+          <div class="tier-row">
+            <span class="tier-badge t2">Tier 2</span>
+            <div class="tier-text">
+              <h5>Pragmatic</h5>
+              <p>Agents with REST API → Adapter + proxy validation</p>
+            </div>
+          </div>
+          <div class="tier-row">
+            <span class="tier-badge t3">Tier 3</span>
+            <div class="tier-text">
+              <h5>Manual</h5>
+              <p>Pure copilots → Manual access or webhook</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="pros-cons">
+          <div class="pro">Flexible with current reality</div>
+          <div class="pro">Gradual path toward maturity</div>
+          <div class="pro">Fast ROI · Iterative improvement</div>
+          <div class="con">More complex architecture</div>
+          <div class="con">Uneven governance across tiers initially</div>
+        </div>
+        <div class="timeline-tag">2-week pilot</div>
+      </div>
+    </div>
+
+    <div class="rec-arrow">
+      <span>→ Recommendation: Option C + Roadmap toward Option A</span>
+    </div>
+  </div>
+</section>
+
+<div class="container"><div class="divider"></div></div>
+
+<!-- ══════════ 04 · KEY CHALLENGES ══════════ -->
+<section>
+  <div class="container">
+    <span class="section-number">04</span>
+    <div class="section-label">Chapter 04</div>
+    <h2 class="section-title">Key Challenges</h2>
+
+    <div class="viability-bar">
+      <span style="font-size: 13px; color: var(--text-muted);">Technical viability</span>
+      <div class="viability-track">
+        <div class="viability-fill"></div>
+      </div>
+      <span class="viability-label">100 %</span>
+    </div>
+    <p class="viability-note">The real challenges are organizational and integration-related, not technical.</p>
+
+    <div class="challenges-list">
+      <div class="challenge-card">
+        <div class="challenge-num">1</div>
+        <div class="challenge-problem">
+          <h4>Data Heterogeneity</h4>
+          <p>Each agent optimized its data structure internally. They don't return data in a standard format, forcing the coordinator to normalize heterogeneous responses.</p>
+        </div>
+        <div class="challenge-fix">
+          <div class="fix-label">Mitigation</div>
+          <p>Standard contract (Option A) or adapters that normalize (Option C).</p>
+        </div>
+      </div>
+
+      <div class="challenge-card">
+        <div class="challenge-num">2</div>
+        <div class="challenge-problem">
+          <h4>Cross-Entity Governance</h4>
+          <p>Not purely technical. Requires business agreements: user identity, data permissions, legal restrictions, audit trails.</p>
+        </div>
+        <div class="challenge-fix">
+          <div class="fix-label">Mitigation</div>
+          <p>Kick-off workshop with Legal, Compliance, and Executives. Define SLAs and permission matrix before implementation.</p>
+        </div>
+      </div>
+
+      <div class="challenge-card">
+        <div class="challenge-num">3</div>
+        <div class="challenge-problem">
+          <h4>Latency &amp; Synchronization</h4>
+          <p>The coordinator calls 3 agents in parallel. What if one takes 2s, another 5s, and the third never responds?</p>
+        </div>
+        <div class="challenge-fix">
+          <div class="fix-label">Mitigation</div>
+          <p>SLA per use case. Timeouts with fallbacks. Async mode with progressive UI updates.</p>
+        </div>
+      </div>
+
+      <div class="challenge-card">
+        <div class="challenge-num">4</div>
+        <div class="challenge-problem">
+          <h4>Agent Failures</h4>
+          <p>What happens if Company B is under maintenance? Does the entire system go down or does it still work with A + C?</p>
+        </div>
+        <div class="challenge-fix">
+          <div class="fix-label">Mitigation</div>
+          <p>Circuit breaker pattern. Graceful degradation. Continuous monitoring with alerts.</p>
+        </div>
+      </div>
+
+      <div class="challenge-card">
+        <div class="challenge-num">5</div>
+        <div class="challenge-problem">
+          <h4>No Clear Ownership</h4>
+          <p>Who governs the coordinator? Which company operates it? Without ownership, the project dies.</p>
+        </div>
+        <div class="challenge-fix">
+          <div class="fix-label">Mitigation</div>
+          <p>Define ownership before kicking off. Dedicated team included in operational budget.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="container"><div class="divider"></div></div>
+
+<!-- ══════════ CONCLUSION ══════════ -->
+<section class="conclusion">
+  <div class="container">
+    <p class="conclusion-quote">The challenges are <em>organizational</em>, not technical.<br>With clear alignment and upfront governance, every one of them is mitigable.</p>
+    <p>The technology is ready. Success depends on people, agreements, and ownership.</p>
+  </div>
+</section>
+
+</body>
+</html>
